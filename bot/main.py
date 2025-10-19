@@ -24,9 +24,13 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
     MessageHandler,
-    MessageReactionHandler,
     filters,
 )
+
+try:  # python-telegram-bot < 20.8 does not provide reaction handler support
+    from telegram.ext import MessageReactionHandler  # type: ignore
+except ImportError:  # pragma: no cover - optional dependency in older releases
+    MessageReactionHandler = None  # type: ignore[assignment]
 
 from .config import CONFIG
 from . import database
@@ -804,7 +808,8 @@ async def main() -> None:
     application.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT, collect_wallet))
     application.add_handler(MessageHandler(filters.ChatType.GROUPS, support_message_handler))
 
-    application.add_handler(MessageReactionHandler(reaction_handler))
+    if MessageReactionHandler is not None:
+        application.add_handler(MessageReactionHandler(reaction_handler))
 
     application.post_init = set_bot_commands
 
